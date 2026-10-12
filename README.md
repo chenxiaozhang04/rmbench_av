@@ -1,151 +1,51 @@
-<h1 align="center">RMBench: Memory-Dependent Manipulation Benchmark</h1>
+# RMBench AV Simulator
 
-RMBench: Memory-Dependent Robotic Manipulation Benchmark with Insights into Policy Design. <i>Under Review</i>, [PDF](https://arxiv.org/pdf/2603.01229) | [arXiv](https://arxiv.org/abs/2603.01229) | [Website](https://rmbench.github.io/) | [Join our Community 🔥](https://robotwin-platform.github.io/doc/community/index.html)
+Simulator-only fork of [RMBench](https://github.com/RoboTwin-Platform/RMBench),
+pinned from upstream commit `7d1cdfc`. This repository contains SAPIEN tasks,
+robot/object assets and a small environment API. It intentionally excludes
+policy implementations, XPolicyLab, training code and evaluation servers.
 
-> Tianxing Chen*, Yuran Wang*, Mingleyang Li*, Yan Qin*, Hao Shi, Zixuan Li, Yifan Hu, Yingsheng Zhang, Kaixuan Wang, Yue Chen, Hongcheng Wang, Renjing Xu, Ruihai Wu, Yao Mu, Yaodong Yang, Hao Dong†, Ping Luo†
+## Install
 
-# 📰 Updates
+Use a dedicated Python 3.10 environment:
 
-**2026.07.14** — Since the previously trained Mem-0 checkpoints were not backed up before our development machine was recycled, we have re-organized the training and now publicly release the retrained model weights:
-
-- **M(1) tasks**: due to limited computational resources, all M1 tasks were trained jointly into a single multi-task `m1_mix` model. The complete model, the processed `m1_mix` dataset, training/inference configs, and all evaluation logs and videos are available at [qiuly/Mem-0-m1mix-RMBench](https://huggingface.co/qiuly/Mem-0-m1mix-RMBench) and [qiuly/Mem-0-m1mix-dataset-RMBench](https://huggingface.co/datasets/qiuly/Mem-0-m1mix-dataset-RMBench).
-- **M(n) tasks**: per-task execution-module checkpoints for `battery_try`, `blocks_ranking_try`, `cover_blocks` and `press_button`, together with per-task normalization stats and evaluation results, are available at [qiuly/Mem-0-mn-RMBench](https://huggingface.co/qiuly/Mem-0-mn-RMBench).
-
-Detailed evaluation results can be found in the Hugging Face model cards above.
-
-# 🧑🏻‍💻 RMBench Usage
-
-> This project is built upon [RoboTwin 2.0](https://github.com/robotwin-Platform/RoboTwin). Policy evaluation can go through the original `policy/` adapters or through [XPolicyLab](https://github.com/XPolicyLab/XPolicyLab).
-
-## 1. Installation
-First, prepare a conda environment.
-
-```
-conda create -n RMBench python=3.10 -y
-conda activate RMBench
+```bash
+pip install -e .
+bash scripts/download_assets.sh
 ```
 
-RMBench Repo: https://github.com/RoboTwin-Platform/RMBench
-
-```
-git clone --recurse-submodules https://github.com/RoboTwin-Platform/RMBench.git
-cd RMBench
-```
-
-For an existing checkout, initialize the pinned XPolicyLab submodule:
-
-```
-git submodule update --init --recursive XPolicyLab
-```
-
-Then, run `scripts/_install.sh` to install basic conda envs, CuRobo, and XPolicyLab:
-
-```
-bash scripts/_install.sh
-```
-
-To refresh the XPolicyLab pin later:
-
-```
-bash scripts/update_xpolicylab.sh
-```
-
-## 2. Download Assets
-To download the assets, run the following command. If you encounter any rate-limit issues, please log in to your Hugging Face account by running `huggingface-cli login`:
-
-```
-bash scripts/_download_assets.sh
-```
-
-## 3. Download Data
-
-Please run the following command to download all data.
-
-```
-bash scripts/_download_data.sh
-```
-
-<details>
-<summary>If you need to collect the data (we actually recommend downloading it directly)</summary>
-
-> In RMBench, we always use `demo_clean` setting.
-
-Running the following command will first search for a random seed for the target collection quantity, and then replay the seed to collect data.
-
-Please strictly follow our tutorial in [RoboTwin 2.0 Doc - Collect Data](https://robotwin-platform.github.io/doc/usage/collect-data.html).
-
-```
-bash collect_data.sh ${task_name} ${task_config} ${gpu_id}
-# Example: bash collect_data.sh cover_blocks demo_clean 0
-```
-
-New collections write XPolicyLab-format HDF5 under `data/<task_config>/<task_name>/<embodiment>/`:
-
-```text
-data/demo_clean/cover_blocks/aloha_agilex/data/episode_0000000.hdf5
-```
-
-**Always decode through `decode_image_bit`, and always encode through `encode_image_bit`.** Camera frames are stored as JPEG bits in two formats (legacy channel-reversed JPEGs and standard `XPL-RGB1`-marked JPEGs). Both decode to RGB. A local copy is in [`data/decode_image_bit.py`](data/decode_image_bit.py); prefer `XPolicyLab.utils.process_data` when that package is installed:
+## API
 
 ```python
-from XPolicyLab.utils.process_data import decode_image_bit, encode_image_bit
-rgb = decode_image_bit(image_bits)  # RGB for every data version
+import rmbench_sim
+
+env = rmbench_sim.make("cover_blocks", action_type="qpos")
+observation, info = env.reset(seed=0)
+description = env.describe()
+
+observation, reward, terminated, truncated, info = env.step(action)
+env.close()
 ```
 
-Do **not** add `cv2.cvtColor(..., COLOR_BGR2RGB)` after `decode_image_bit`. At eval time the policy server already receives decoded RGB arrays.
-</details>
+The observation is RMBench-native. Camera/robot name normalization and policy
+action codecs belong to the consuming system, not this simulator repository.
 
-## 4. Run Policies
+Available task names are returned by `rmbench_sim.list_tasks()`.
 
-Two evaluation paths are available.
+## Scope
 
-**Original adapters** (still in `policy/`):
+Included:
 
-```
-python scripts/eval_policy.py --config policy/<Name>/deploy_policy.yml ...
-# or
-bash policy/<Name>/eval.sh ...
-```
+- SAPIEN task and scene implementation
+- task and embodiment configuration
+- robot/object asset downloader
+- `reset`, `observe`, `step`, `describe`, and `close`
 
-1. Mem-0 (ours): [See Mem-0 Document](./policy/Mem-0/README.md)
-2. DP: [See DP Document](https://robotwin-platform.github.io/doc/usage/DP.html)
-3. ACT: [See ACT Document](https://robotwin-platform.github.io/doc/usage/ACT.html)
-4. Pi 0.5: [See Pi 0.5 Document](https://robotwin-platform.github.io/doc/usage/Pi05.html)
-5. X-VLA: [See X-VLA Document](./policy/X-VLA/README.md)
-6. Other Policies (Pi0, RDT, etc): [See Document](https://robotwin-platform.github.io/doc/usage) and [See Folder](./policy/)
-7. **Configure your policy:** [See Tutorial Here](https://robotwin-platform.github.io/doc/usage/deploy-your-policy.html)
+Excluded:
 
-**XPolicyLab adapters** (recommended for new work):
+- policies and checkpoints
+- XPolicyLab
+- model servers and evaluation schedulers
+- training and benchmark data downloads
 
-```
-bash XPolicyLab/policy/Mem_0/eval.sh RMBench <task_name> <ckpt_name> <env_cfg_type> <action_type> <seed> \
-  <policy_gpu_id> <env_gpu_id> <policy_env> <eval_env>
-
-# or schedule the RMBench task list
-bash scripts/eval_policy.sh multitask \
-  --config env_cfg/eval/all_tasks.yml \
-  --policy-name Mem_0 \
-  --env-cfg-type arx_x5 \
-  --action-type joint \
-  --ckpt-name <ckpt_name> \
-  --eval-env-conda-env RMBench
-```
-
-See [XPolicyLab/policy/Mem_0/](XPolicyLab/policy/Mem_0/) for the Mem-0 adapter. Task configs live in `env_cfg/task_config/`.
-
-# 👍 Citations
-
-If you find our work useful, please consider citing:
-
-```
-@article{chen2026rmbench,
-  title={RMBench: Memory-Dependent Robotic Manipulation Benchmark with Insights into Policy Design},
-  author={Chen, Tianxing and Wang, Yuran and Li, Mingleyang and Qin, Yan and Shi, Hao and Li, Zixuan and Hu, Yifan and Zhang, Yingsheng and Wang, Kaixuan and Chen, Yue and others},
-  journal={arXiv preprint arXiv:2603.01229},
-  year={2026}
-}
-```
-
-# 🏷️ License
-
-This repository is released under the MIT license. See [LICENSE](./LICENSE) for additional details.
+The original MIT license and copyright notice are retained in `LICENSE`.

@@ -559,23 +559,6 @@ class Base_Task(gym.Env):
             traj_data = pickle.load(f)
         return traj_data
 
-    def merge_pkl_to_hdf5_video(self, instructions=None):
-        if not self.save_data:
-            return
-        cache_path = self.folder_path["cache"]
-        episode_name = f"episode_{self.ep_num:07d}"
-        target_file_path = f"{self.save_dir}/data/{episode_name}.hdf5"
-        target_video_path = f"{self.save_dir}/video/{episode_name}.mp4"
-
-        os.makedirs(f"{self.save_dir}/data", exist_ok=True)
-        process_folder_to_hdf5_video(
-            cache_path,
-            target_file_path,
-            target_video_path,
-            instructions=instructions,
-            frequency=int(self.save_freq or 15),
-        )
-
     def remove_data_cache(self):
         folder_path = self.folder_path["cache"]
         GREEN = "\033[92m"
