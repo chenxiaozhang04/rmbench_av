@@ -135,7 +135,9 @@ class Robot:
     def reset(self, scene, need_topp=False, **kwargs):
         self._init_robot_(scene, need_topp, **kwargs)
 
-        if self.communication_flag:
+        if not kwargs.get("need_plan", True):
+            self.communication_flag = False
+        elif self.communication_flag:
             if hasattr(self, "left_conn") and self.left_conn:
                 self.left_conn.send({"cmd": "reset"})
                 _ = self.left_conn.recv()

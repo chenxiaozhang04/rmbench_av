@@ -275,6 +275,12 @@ except Exception as e:
     print('Exception traceback:')
     traceback.print_exc()
 
+    class CuroboPlanner:
+        """Unavailable optional planner; qpos-only simulator use does not need it."""
+
+        def __init__(self, *args, **kwargs):
+            raise RuntimeError("CuroboPlanner requires the optional curobo package")
+
 
 # ********************** MplibPlanner **********************
 class MplibPlanner:

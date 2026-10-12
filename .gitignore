@@ -4,6 +4,7 @@ data/*
 !data/process_stuck.py
 !data/decode_image_bit.py
 __pycache__/
+*.egg-info/
 **/checkpoints/
 result/
 envs/curobo

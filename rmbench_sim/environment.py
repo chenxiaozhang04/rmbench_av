@@ -7,10 +7,11 @@ import os
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, ClassVar, Self
+from typing import Any, ClassVar
 
 import numpy as np
 import yaml
+from typing_extensions import Self
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG_ROOT = ROOT / "env_cfg" / "task_config"
@@ -106,6 +107,7 @@ class RMBenchEnv:
             left_embodiment_config=_read_yaml(left_path / "config.yml"),
             right_embodiment_config=_read_yaml(right_path / "config.yml"),
             dual_arm_embodied=len(embodiment) == 1,
+            need_plan=self.action_type == "ee",
         )
         if len(embodiment) == 3:
             config["embodiment_dis"] = embodiment[2]
@@ -133,6 +135,17 @@ class RMBenchEnv:
         task = self._require_task()
         with _repository_cwd():
             return task.get_obs()
+
+    @property
+    def native_task(self) -> Any:
+        """Underlying RMBench task for simulator extensions such as mounted URDFs."""
+        return self._require_task()
+
+    def third_view_rgb(self) -> np.ndarray:
+        task = self._require_task()
+        with _repository_cwd():
+            task._update_render()
+            return task.cameras.get_third_view_rgb()
 
     def step(
         self, action: Sequence[float] | np.ndarray

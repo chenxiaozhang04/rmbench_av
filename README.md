@@ -32,6 +32,19 @@ action codecs belong to the consuming system, not this simulator repository.
 
 Available task names are returned by `rmbench_sim.list_tasks()`.
 
+Auxiliary robot parts can be loaded without changing the task embodiment:
+
+```python
+from rmbench_sim import MountedArticulation
+
+head = MountedArticulation(
+    env.native_task.scene,
+    "/path/to/piperX_head.urdf",
+    position=[0.0, -0.4, 0.75],
+    qpos=[0.0] * 6,
+)
+```
+
 ## Scope
 
 Included:

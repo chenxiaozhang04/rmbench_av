@@ -70,7 +70,7 @@ class Base_Task(gym.Env):
         self.dual_arm = kwags.get("dual_arm", True)
         self.eval_mode = kwags.get("eval_mode", False)
 
-        self.need_topp = True  # TODO
+        self.need_topp = kwags.get("need_plan", True)
 
         # Random
         random_setting = kwags.get("domain_randomization")
@@ -394,7 +394,8 @@ class Base_Task(gym.Env):
         """
         if not hasattr(self, "robot"):
             self.robot = Robot(self.scene, self.need_topp, **kwags)
-            self.robot.set_planner(self.scene)
+            if self.need_plan:
+                self.robot.set_planner(self.scene)
             self.robot.init_joints()
         else:
             self.robot.reset(self.scene, self.need_topp, **kwags)
