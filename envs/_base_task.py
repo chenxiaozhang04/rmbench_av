@@ -128,7 +128,17 @@ class Base_Task(gym.Env):
 
         render_freq = self.render_freq
         self.render_freq = 0
-        self.together_open_gripper(save_freq=None)
+        if self.need_plan:
+            self.together_open_gripper(save_freq=None)
+        else:
+            # A qpos-only environment intentionally has no Curobo/MPLib
+            # planner.  Opening the grippers is a drive-target operation and
+            # must not go through the planner-backed interpolation helpers.
+            self.robot.set_gripper(1.0, "left", gripper_eps=0.0)
+            if self.is_dual_arm:
+                self.robot.set_gripper(1.0, "right", gripper_eps=0.0)
+            for _ in range(50):
+                self.scene.step()
         self.render_freq = render_freq
 
         self.robot.set_origin_endpose()

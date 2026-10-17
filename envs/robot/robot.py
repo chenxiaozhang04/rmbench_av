@@ -29,6 +29,9 @@ class Robot:
 
         self.left_js = None
         self.right_js = None
+        # qpos replay does not construct a motion planner, but gripper/state
+        # helpers still branch on this flag during task initialization.
+        self.communication_flag = False
 
         left_embodiment_args = kwargs["left_embodiment_config"]
         right_embodiment_args = kwargs["right_embodiment_config"]
